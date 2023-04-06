@@ -1,0 +1,45 @@
+services:
+  vote:
+    image: 192.168.11.136:5000/dockersamples/examplevotingapp_vote
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "5100:80"
+
+  result:
+    image: 192.168.11.136:5000/dockersamples/examplevotingapp_result
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5001:80"
+  worker:
+    image: 192.168.11.136:5000/dockersamples/examplevotingapp_worker
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+  redis:
+    image: 192.168.11.136:5000/redis:alpine
+    volumes:
+      - "./healthchecks:/healthchecks"
+    healthcheck:
+      test: /healthchecks/redis.sh
+      interval: "5s"
+  db:
+    image: 192.168.11.136:5000/postgres:15-alpine
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    volumes:
+      - "db-data:/var/lib/postgresql/data"
+      - "./healthchecks:/healthchecks"
+    healthcheck:
+      test: /healthchecks/postgres.sh
+      interval: "5s"
+
+volumes:
+  db-data:
